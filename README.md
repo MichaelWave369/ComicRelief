@@ -48,7 +48,9 @@ Canonical + Presentation Result
         ↓
 Adapters
   ├── Console
-  └── Structured Logging
+  ├── Structured Logging
+  ├── Pino-compatible
+  └── Winston-compatible
 ```
 
 ComicRelief sits downstream of operational logic. **Presentation has zero authority upstream.**
@@ -178,6 +180,101 @@ Run the included example:
 npm run example:structured
 ```
 
+## Pino-compatible adapter
+
+ComicRelief does not depend on Pino. It accepts the tiny `info` / `warn` / `error` method surface Pino already exposes.
+
+```ts
+import pino from "pino";
+import { createPinoAdapter } from "comicrelief";
+
+const logger = pino();
+const log = createPinoAdapter(logger, {
+  context: { service: "api" }
+});
+
+log({
+  code: "DNS_FAILURE",
+  severity: "warning",
+  canonical: "DNS lookup failed.",
+  profile: "sysadmin"
+});
+```
+
+The rendered message becomes the Pino message while ComicRelief metadata stays namespaced:
+
+```json
+{
+  "msg": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
+  "comicRelief": {
+    "code": "DNS_FAILURE",
+    "severity": "warning",
+    "profile": "sysadmin",
+    "canonical": "DNS lookup failed.",
+    "presentation": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
+    "humorApplied": true,
+    "context": {
+      "service": "api"
+    }
+  }
+}
+```
+
+Caller context stays nested instead of being spread into Pino's top-level object, avoiding collisions with framework-owned fields such as `level`, `time`, or `msg`.
+
+Run the dependency-free shape example:
+
+```bash
+npm run example:pino
+```
+
+## Winston-compatible adapter
+
+ComicRelief also accepts Winston's `logger.log(info)` shape without importing Winston itself.
+
+```ts
+import winston from "winston";
+import { createWinstonAdapter } from "comicrelief";
+
+const logger = winston.createLogger({
+  transports: [new winston.transports.Console()]
+});
+
+const log = createWinstonAdapter(logger, {
+  context: { service: "worker" }
+});
+
+log({
+  code: "MERGE_CONFLICT",
+  severity: "error",
+  canonical: "Merge conflict detected in 4 files.",
+  profile: "deadpan"
+});
+```
+
+The adapter emits a normal Winston info object with `level` and `message`, plus a namespaced `comicRelief` metadata object. Caller context never gets to overwrite the framework's `level` or `message` fields.
+
+Run the dependency-free shape example:
+
+```bash
+npm run example:winston
+```
+
+## Logger severity bridge
+
+Framework adapters use a deliberately conservative three-level bridge:
+
+| ComicRelief severity | Logger level |
+| --- | --- |
+| `info` | `info` |
+| `success` | `info` |
+| `warning` | `warn` |
+| `error` | `error` |
+| `critical` | `error` |
+| `emergency` | `error` |
+
+The original ComicRelief severity remains preserved in structured metadata. This mapping chooses an output channel; it does not reinterpret operational severity.
+
 ## Profiles
 
 - `off`
@@ -219,6 +316,8 @@ No network request. No random selection. No hidden model call.
 6. Humor text has no access to permissions, actions, control flow, or severity mutation.
 7. The renderer returns both canonical and presentation text so callers can log the canonical form independently.
 8. Adapters may choose output channels or record shapes, but do not alter core results.
+9. Framework adapters keep ComicRelief metadata namespaced instead of merging caller data into logger-owned fields.
+10. Logger exceptions propagate normally; ComicRelief does not swallow or reinterpret sink failures.
 
 ## Built-in event codes
 
@@ -248,7 +347,7 @@ comicRelief(input, options?)
 humorAllowed(severity)
 ```
 
-### Adapters
+### Generic adapters
 
 ```ts
 createConsoleAdapter(options?)
@@ -256,6 +355,17 @@ consoleMethodForSeverity(severity)
 toStructuredRecord(input, options?)
 createStructuredAdapter(sink, options?)
 ```
+
+### Logger adapters
+
+```ts
+createPinoAdapter(logger, options?)
+createWinstonAdapter(logger, options?)
+loggerLevelForSeverity(severity)
+toLoggerMetadata(record)
+```
+
+Both logger adapters return the complete structured ComicRelief record after writing it.
 
 ### Core result
 
@@ -282,7 +392,7 @@ Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md), esp
 
 ## Project status
 
-**v0.2 candidate**
+**v0.3 candidate**
 
 - deterministic renderer;
 - hard severity gate;
@@ -290,12 +400,15 @@ Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md), esp
 - stable variant selection;
 - console adapter;
 - structured record adapter;
-- dependency-free logger bridge;
+- generic structured sink bridge;
+- Pino-compatible adapter;
+- Winston-compatible adapter;
+- namespaced logger metadata;
 - invariant tests;
 - CI;
 - documented trust boundary.
 
-Likely next steps: thin Pino/Winston integrations, CLI ergonomics, catalog tooling, and a small browser demo. The core rule stays boring on purpose: jokes decorate messages; they do not govern systems.
+Likely next steps: CLI ergonomics, catalog tooling, a small browser demo, and optional framework-specific examples. The core rule stays boring on purpose: jokes decorate messages; they do not govern systems.
 
 ## License
 
