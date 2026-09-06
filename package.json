@@ -1,10 +1,11 @@
 {
   "name": "comicrelief",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A deterministic, governed humor presentation layer for software messages.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,8 +20,18 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node --test test/*.test.mjs",
-    "check": "npm run build && npm test"
+    "check": "npm run build && npm test",
+    "example:console": "npm run build && node examples/console.mjs",
+    "example:structured": "npm run build && node examples/structured.mjs"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MichaelWave369/ComicRelief.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MichaelWave369/ComicRelief/issues"
+  },
+  "homepage": "https://github.com/MichaelWave369/ComicRelief#readme",
   "keywords": [
     "humor",
     "errors",
