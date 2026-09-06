@@ -1,7 +1,8 @@
 import { cp, mkdir, rm } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(import.meta.dirname, "..");
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const demoDir = resolve(root, "demo");
 const distDir = resolve(root, "dist");
 const siteDir = resolve(root, "site");
