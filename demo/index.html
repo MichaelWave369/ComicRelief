@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="ComicRelief browser playground: deterministic humor for software messages without changing operational meaning." />
+  <title>ComicRelief Playground</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav" aria-label="Primary navigation">
+      <a class="brand" href="#top" aria-label="ComicRelief home">
+        <span class="brand-mark" aria-hidden="true">CR</span>
+        <span>ComicRelief</span>
+      </a>
+      <div class="nav-links">
+        <a href="#playground">Playground</a>
+        <a href="#catalog-lab">Catalog Lab</a>
+        <a href="https://github.com/MichaelWave369/ComicRelief">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="hero-inner" id="top">
+      <p class="eyebrow">Governed humor for software</p>
+      <h1>Serious software.<br /><span>Unnecessarily entertaining</span> error messages.</h1>
+      <p class="hero-copy">
+        ComicRelief adds deterministic humor downstream of your real system message.
+        Canonical meaning stays intact. Severity stays intact. The joke gets no keys to production.
+      </p>
+      <div class="hero-badges" aria-label="Project properties">
+        <span>Deterministic</span>
+        <span>Zero runtime dependencies</span>
+        <span>Critical means no jokes</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section" id="playground" aria-labelledby="playground-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Live playground</p>
+          <h2 id="playground-title">Break something. Make it slightly more survivable.</h2>
+        </div>
+        <p class="section-copy">Every render below runs through the same compiled ComicRelief core used by the package.</p>
+      </div>
+
+      <div class="playground-grid">
+        <form class="panel controls-panel" id="playground-form">
+          <div class="field-row">
+            <label class="field">
+              <span>Event code</span>
+              <select id="event-code" name="event-code"></select>
+            </label>
+            <label class="field">
+              <span>Severity</span>
+              <select id="severity" name="severity"></select>
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label class="field">
+              <span>Humor profile</span>
+              <select id="profile" name="profile"></select>
+            </label>
+            <label class="field">
+              <span>Variant seed <small>(optional)</small></span>
+              <input id="variant-seed" name="variant-seed" type="text" placeholder="same input → same joke" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Canonical message</span>
+            <textarea id="canonical" name="canonical" rows="5" spellcheck="false"></textarea>
+          </label>
+
+          <div class="option-row">
+            <label class="switch-label">
+              <input id="use-custom-catalog" type="checkbox" />
+              <span>Use valid Catalog Lab contents</span>
+            </label>
+            <button class="button button-secondary" id="reset-playground" type="button">Reset example</button>
+          </div>
+        </form>
+
+        <section class="panel output-panel" aria-labelledby="output-title">
+          <div class="output-heading">
+            <div>
+              <p class="panel-kicker">Presentation result</p>
+              <h3 id="output-title">What the human sees</h3>
+            </div>
+            <span class="status-chip" id="humor-status">Checking…</span>
+          </div>
+
+          <div class="message-block">
+            <span class="message-label">Canonical</span>
+            <pre id="canonical-output"></pre>
+          </div>
+
+          <div class="message-block presentation-block">
+            <span class="message-label">Presented</span>
+            <pre id="presentation-output"></pre>
+          </div>
+
+          <details class="structured-details">
+            <summary>Structured result</summary>
+            <pre id="structured-output"></pre>
+          </details>
+        </section>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="catalog-lab" aria-labelledby="catalog-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Catalog Lab</p>
+          <h2 id="catalog-title">Author humor without inventing a second policy system.</h2>
+        </div>
+        <p class="section-copy">Paste or edit a custom catalog. Validation happens before the playground is allowed to use it.</p>
+      </div>
+
+      <div class="catalog-grid">
+        <section class="panel editor-panel">
+          <div class="toolbar" role="group" aria-label="Catalog editor actions">
+            <button class="button button-primary" id="catalog-starter" type="button">Starter catalog</button>
+            <button class="button button-secondary" id="catalog-built-in" type="button">Built-in catalog</button>
+            <button class="button button-secondary" id="catalog-format" type="button">Format JSON</button>
+            <button class="button button-secondary" id="catalog-validate" type="button">Validate</button>
+          </div>
+          <label class="field editor-field">
+            <span>Catalog JSON</span>
+            <textarea id="catalog-editor" rows="22" spellcheck="false" aria-describedby="catalog-help"></textarea>
+          </label>
+          <p class="field-help" id="catalog-help">Empty arrays are valid and explicitly disable humor for that event/profile.</p>
+        </section>
+
+        <aside class="panel validation-panel" aria-labelledby="validation-title">
+          <div class="output-heading">
+            <div>
+              <p class="panel-kicker">Runtime validator</p>
+              <h3 id="validation-title">Catalog health</h3>
+            </div>
+            <span class="status-chip" id="catalog-status">Checking…</span>
+          </div>
+          <p class="validation-summary" id="validation-summary"></p>
+          <ul class="validation-errors" id="validation-errors"></ul>
+
+          <div class="rule-card">
+            <strong>Hard boundary</strong>
+            <p>Catalog text may decorate presentation. It cannot change severity, canonical text, permissions, actions, or control flow.</p>
+          </div>
+          <div class="rule-card">
+            <strong>High severity</strong>
+            <p><code>critical</code> and <code>emergency</code> suppress humor even when the catalog contains a matching line.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="principle" aria-label="ComicRelief core principle">
+      <p>Presentation has <strong>zero authority upstream.</strong></p>
+      <span>Humor may alter presentation, but never truth, severity, authority, or action semantics.</span>
+    </section>
+  </main>
+
+  <footer>
+    <span>ComicRelief</span>
+    <span>Because the stack trace already ruined your day.</span>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

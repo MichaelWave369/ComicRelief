@@ -1,6 +1,6 @@
 # Contributing to ComicRelief
 
-ComicRelief welcomes code, adapters, documentation, tests, CLI improvements, catalog tooling, and new humor lines. The one thing contributions may not negotiate away is the trust boundary.
+ComicRelief welcomes code, adapters, documentation, tests, CLI improvements, browser demo work, catalog tooling, and new humor lines. The one thing contributions may not negotiate away is the trust boundary.
 
 > **Humor may alter presentation, but never truth, severity, authority, or action semantics.**
 
@@ -10,9 +10,10 @@ ComicRelief welcomes code, adapters, documentation, tests, CLI improvements, cat
 npm install
 npm run check
 npm run cli -- help
+npm run demo:serve
 ```
 
-`npm run check` must compile the TypeScript package and pass the full Node test suite, including executable-level CLI integration tests.
+`npm run check` must compile the TypeScript package and pass the full Node test suite, including executable-level CLI integration tests and browser demo build invariants.
 
 ## Adding humor
 
@@ -54,7 +55,7 @@ See [`docs/CATALOGS.md`](docs/CATALOGS.md) for the public format.
 
 ## Severity policy
 
-`critical` and `emergency` always suppress humor. Contributions must not add bypasses, exceptions, CLI flags, catalog rules, or alternate presentation paths around this rule.
+`critical` and `emergency` always suppress humor. Contributions must not add bypasses, exceptions, CLI flags, browser controls, catalog rules, or alternate presentation paths around this rule.
 
 ## Adding an adapter
 
@@ -90,6 +91,29 @@ It must not:
 
 CLI behavior changes should be tested by invoking `bin/comicrelief.mjs` as a child process, not only by unit-testing internal helpers.
 
+## Browser demo changes
+
+The browser playground is a consumer of the compiled package, not a second implementation.
+
+Changes must preserve these rules:
+
+- `demo/app.js` imports the generated package graph from `./lib/index.js`;
+- do not duplicate `comicRelief`, stable hashing, severity gates, or catalog validation in demo code;
+- custom catalog text must pass the exported runtime validator before use;
+- untrusted catalog/result strings must be rendered with text-only DOM APIs;
+- do not add remote runtime JavaScript or stylesheet dependencies;
+- do not add analytics or hidden network calls;
+- browser controls collect explicit inputs but do not infer operational facts.
+
+Build or serve the demo with:
+
+```bash
+npm run demo:build
+npm run demo:serve
+```
+
+See [`docs/DEMO.md`](docs/DEMO.md) for the browser-specific architecture.
+
 ## Tests
 
 Every behavior change should include an invariant-focused test. In particular, new integrations should test that:
@@ -100,7 +124,8 @@ Every behavior change should include an invariant-focused test. In particular, n
 4. unknown event codes fail closed unless explicitly configured;
 5. adapters emit what the core actually returned;
 6. malformed untyped catalog data is rejected before rendering;
-7. CLI failures return nonzero exit status.
+7. CLI failures return nonzero exit status;
+8. browser builds consume the compiled package rather than a duplicated renderer.
 
 ## Pull requests
 
@@ -109,6 +134,7 @@ Keep pull requests narrow and explain whether the change affects:
 - core rendering;
 - catalog content or validation;
 - CLI behavior;
+- browser demo behavior;
 - adapters;
 - public types;
 - documentation only.

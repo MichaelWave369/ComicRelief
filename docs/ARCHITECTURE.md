@@ -30,14 +30,14 @@ Canonical Message            Presentation Message
         |                          |
         +-------------+------------+
                       |
-          +-----------+-----------+
-          |                       |
-          v                       v
-       Adapters                 CLI / Tools
-  - console output          - render messages
-  - structured records     - discover events/profiles
-  - Pino-compatible        - validate catalogs
-  - Winston-compatible     - emit starter catalogs
+          +-----------+-----------+-----------+
+          |                       |           |
+          v                       v           v
+       Adapters                 CLI / Tools   Browser Demo
+  - console output          - render messages - live playground
+  - structured records     - discover inputs - catalog authoring
+  - Pino-compatible        - validate catalogs- validation feedback
+  - Winston-compatible     - starter catalogs- same compiled core
 ```
 
 ## Trust boundary
@@ -99,7 +99,7 @@ If Pino, Winston, a transport, or a caller-provided compatible logger fails, tha
 
 ### 8. Untyped catalog validation
 
-Custom catalogs may arrive from JSON files or other untyped sources. Runtime validation occurs before CLI rendering when a catalog file is supplied.
+Custom catalogs may arrive from JSON files or other untyped sources. Runtime validation occurs before CLI rendering when a catalog file is supplied and before the browser playground enables a custom catalog.
 
 Validation rejects malformed roots, malformed event entries, unknown profile names, non-array profile values, non-string lines, and empty or whitespace-only lines.
 
@@ -129,6 +129,33 @@ It does not:
 - swallow CLI validation failures behind a zero exit code.
 
 The CLI is a developer convenience surface, not an alternate policy engine.
+
+### 10. Browser confinement
+
+The browser playground consumes the compiled package graph. It does not contain a second renderer, stable-hash implementation, severity gate, or catalog validator.
+
+The static build copies `dist/` into `site/lib/`, and `demo/app.js` imports `./lib/index.js`. This keeps browser behavior downstream of the same core exercised by package consumers and tests.
+
+The browser may:
+
+- collect explicit event code, severity, canonical message, profile, and variant seed values;
+- render those values through the public core;
+- edit JSON catalog text;
+- validate custom catalogs with the public runtime validator;
+- display structured presentation results.
+
+It does not:
+
+- infer operational severity or outcome;
+- rewrite the caller's canonical message;
+- execute catalog lines as code;
+- bypass the core's high-severity gate;
+- enable an invalid custom catalog;
+- depend on remote JavaScript, stylesheets, analytics, or API calls.
+
+Catalog and result text are inserted into the page through text-only DOM APIs such as `textContent`.
+
+See [`DEMO.md`](DEMO.md) for the static build and browser-specific boundary.
 
 ## Logger severity bridge
 
@@ -207,8 +234,8 @@ If the core system does not know what happened, ComicRelief should not pretend i
 
 ## Extension rule
 
-Adapters and tools remain thin translations around the stable core. Pino and Winston adapters map a `StructuredComicRecord` into each logger's native call shape. The CLI maps explicit command-line values into the same public renderer and catalog validator.
+Adapters and tools remain thin translations around the stable core. Pino and Winston adapters map a `StructuredComicRecord` into each logger's native call shape. The CLI maps explicit command-line values into the same public renderer and catalog validator. The browser playground maps explicit DOM inputs into the compiled package and displays the returned presentation result.
 
-Neither layer teaches the ComicRelief core about framework lifecycle, transport, serialization, application policy, or incident response.
+None of these layers teaches the ComicRelief core about framework lifecycle, transport, serialization, application policy, incident response, or browser state.
 
 That separation keeps the joke layer replaceable and the operational layer boring, which is exactly how we want it.
