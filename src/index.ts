@@ -1,6 +1,14 @@
 export { builtInCatalog } from "./catalog.js";
 export { comicRelief, humorAllowed } from "./core.js";
 export {
+  ACTIVE_HUMOR_PROFILES,
+  HUMOR_PROFILES,
+  catalogEventCodes,
+  isHumorCatalog,
+  starterCatalog,
+  validateCatalog
+} from "./catalog-tools.js";
+export {
   consoleMethodForSeverity,
   createConsoleAdapter,
   createStructuredAdapter,
@@ -22,6 +30,11 @@ export type {
   HumorProfile,
   Severity
 } from "./types.js";
+
+export type {
+  CatalogValidationError,
+  CatalogValidationResult
+} from "./catalog-tools.js";
 
 export type {
   ConsoleAdapterOptions,
