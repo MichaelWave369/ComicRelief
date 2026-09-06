@@ -31,7 +31,7 @@ Database corruption detected. Immediate recovery action required.
 
 No joke. The database is turning into soup. We have priorities.
 
-## Core pipeline
+## Architecture
 
 ```text
 Application / Domain Logic
@@ -46,16 +46,17 @@ ComicRelief Core
         ↓
 Canonical + Presentation Result
         ↓
-Adapters
+Adapters / Tools
   ├── Console
   ├── Structured Logging
   ├── Pino-compatible
-  └── Winston-compatible
+  ├── Winston-compatible
+  └── CLI
 ```
 
 ComicRelief sits downstream of operational logic. **Presentation has zero authority upstream.**
 
-For the full trust boundary and invariants, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the trust boundary and [`docs/CATALOGS.md`](docs/CATALOGS.md) for custom catalog rules.
 
 ## Install
 
@@ -80,16 +81,115 @@ const result = comicRelief({
 console.log(result.message);
 ```
 
+## CLI
+
+The package exposes a `comicrelief` executable. In the repository you can run the same CLI with `npm run cli -- ...` after installing dependencies.
+
+### Render a message
+
+```bash
+comicrelief render \
+  --code DNS_FAILURE \
+  --severity warning \
+  --profile sysadmin \
+  --message "DNS lookup failed."
+```
+
 Example output:
 
 ```text
-Connection to api.example.com timed out after 30 seconds.
-Networking remains a collaborative exercise in disappointment.
+DNS lookup failed.
+It is DNS. It was always going to be DNS.
 ```
 
-## Console adapter
+Machine-readable output:
 
-For human-facing CLI or terminal output:
+```bash
+comicrelief render \
+  --code MERGE_CONFLICT \
+  --severity warning \
+  --profile dry \
+  --message "Merge conflict detected." \
+  --json
+```
+
+### Discover built-ins
+
+```bash
+comicrelief events
+comicrelief profiles
+```
+
+Both commands also accept `--json`.
+
+### Catalog tools
+
+Generate a valid starter catalog:
+
+```bash
+comicrelief catalog sample
+```
+
+Validate a custom JSON catalog:
+
+```bash
+comicrelief catalog validate ./comicrelief.catalog.json
+```
+
+Render with it:
+
+```bash
+comicrelief render \
+  --code MY_APP_EVENT \
+  --severity warning \
+  --profile dry \
+  --message "Canonical event text." \
+  --catalog ./comicrelief.catalog.json
+```
+
+Validation failures return a nonzero exit code and include a path to the invalid value. See [`docs/CATALOGS.md`](docs/CATALOGS.md) for the full format.
+
+## Profiles
+
+- `off`
+- `dry`
+- `deadpan`
+- `absurdist`
+- `nerdy`
+- `sarcasm-light`
+- `sysadmin`
+
+Runtime discovery is also exported through `HUMOR_PROFILES` and `ACTIVE_HUMOR_PROFILES`.
+
+## Severity policy
+
+| Severity | Humor budget |
+| --- | --- |
+| `info` | full |
+| `success` | full |
+| `warning` | moderate |
+| `error` | mild |
+| `critical` | none |
+| `emergency` | none |
+
+`critical` and `emergency` are hard gates. They never receive humor regardless of profile, CLI options, or catalog contents.
+
+## Catalog tooling API
+
+```ts
+import {
+  catalogEventCodes,
+  isHumorCatalog,
+  starterCatalog,
+  validateCatalog
+} from "comicrelief";
+```
+
+`validateCatalog(value)` performs runtime validation for JSON and other untyped sources. `isHumorCatalog(value)` is the matching TypeScript type guard.
+
+An empty profile array is intentionally valid and disables humor for that exact event/profile pair.
+
+## Console adapter
 
 ```ts
 import { createConsoleAdapter } from "comicrelief";
@@ -104,7 +204,7 @@ write({
 });
 ```
 
-The adapter maps severity to a normal console channel without changing the severity itself:
+Severity chooses the output channel without changing the original severity.
 
 | Severity | Console method |
 | --- | --- |
@@ -115,9 +215,7 @@ The adapter maps severity to a normal console channel without changing the sever
 | `critical` | `console.error` |
 | `emergency` | `console.error` |
 
-The complete `ComicReliefResult` is still returned, including the untouched canonical message.
-
-Run the included example:
+Run the example:
 
 ```bash
 npm run example:console
@@ -146,35 +244,7 @@ const record = toStructuredRecord(
 );
 ```
 
-Result shape:
-
-```json
-{
-  "code": "BUILD_FAILED",
-  "severity": "error",
-  "profile": "deadpan",
-  "canonical": "Build failed.",
-  "message": "Build failed.\nThe build has reconsidered its commitment to existing.",
-  "humorApplied": true,
-  "humor": "The build has reconsidered its commitment to existing.",
-  "context": {
-    "service": "api",
-    "build": 42
-  }
-}
-```
-
-You can also bridge into any logger without adding a ComicRelief dependency on that framework:
-
-```ts
-import { createStructuredAdapter } from "comicrelief";
-
-const write = createStructuredAdapter((record) => {
-  myLogger.log(record.severity, record.canonical, record);
-});
-```
-
-Run the included example:
+Run the example:
 
 ```bash
 npm run example:structured
@@ -182,7 +252,7 @@ npm run example:structured
 
 ## Pino-compatible adapter
 
-ComicRelief does not depend on Pino. It accepts the tiny `info` / `warn` / `error` method surface Pino already exposes.
+ComicRelief does not depend on Pino. It accepts the tiny `info` / `warn` / `error` surface Pino already exposes.
 
 ```ts
 import pino from "pino";
@@ -201,28 +271,7 @@ log({
 });
 ```
 
-The rendered message becomes the Pino message while ComicRelief metadata stays namespaced:
-
-```json
-{
-  "msg": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
-  "comicRelief": {
-    "code": "DNS_FAILURE",
-    "severity": "warning",
-    "profile": "sysadmin",
-    "canonical": "DNS lookup failed.",
-    "presentation": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
-    "humorApplied": true,
-    "context": {
-      "service": "api"
-    }
-  }
-}
-```
-
-Caller context stays nested instead of being spread into Pino's top-level object, avoiding collisions with framework-owned fields such as `level`, `time`, or `msg`.
-
-Run the dependency-free shape example:
+ComicRelief metadata stays under a `comicRelief` namespace instead of colliding with Pino-owned fields.
 
 ```bash
 npm run example:pino
@@ -240,9 +289,7 @@ const logger = winston.createLogger({
   transports: [new winston.transports.Console()]
 });
 
-const log = createWinstonAdapter(logger, {
-  context: { service: "worker" }
-});
+const log = createWinstonAdapter(logger);
 
 log({
   code: "MERGE_CONFLICT",
@@ -252,17 +299,11 @@ log({
 });
 ```
 
-The adapter emits a normal Winston info object with `level` and `message`, plus a namespaced `comicRelief` metadata object. Caller context never gets to overwrite the framework's `level` or `message` fields.
-
-Run the dependency-free shape example:
-
 ```bash
 npm run example:winston
 ```
 
 ## Logger severity bridge
-
-Framework adapters use a deliberately conservative three-level bridge:
 
 | ComicRelief severity | Logger level |
 | --- | --- |
@@ -273,30 +314,7 @@ Framework adapters use a deliberately conservative three-level bridge:
 | `critical` | `error` |
 | `emergency` | `error` |
 
-The original ComicRelief severity remains preserved in structured metadata. This mapping chooses an output channel; it does not reinterpret operational severity.
-
-## Profiles
-
-- `off`
-- `dry`
-- `deadpan`
-- `absurdist`
-- `nerdy`
-- `sarcasm-light`
-- `sysadmin`
-
-## Severity policy
-
-| Severity | Humor budget |
-| --- | --- |
-| `info` | full |
-| `success` | full |
-| `warning` | moderate |
-| `error` | mild |
-| `critical` | none |
-| `emergency` | none |
-
-The library enforces the last two as a hard gate: `critical` and `emergency` messages never receive humor, regardless of profile or catalog contents.
+The original severity remains preserved in ComicRelief metadata. The mapping chooses an output channel; it does not reinterpret operational severity.
 
 ## Deterministic by default
 
@@ -314,14 +332,14 @@ No network request. No random selection. No hidden model call.
 4. `off` always returns the canonical message only.
 5. Unknown event codes fail safely to the canonical message.
 6. Humor text has no access to permissions, actions, control flow, or severity mutation.
-7. The renderer returns both canonical and presentation text so callers can log the canonical form independently.
+7. The renderer returns canonical and presentation text separately.
 8. Adapters may choose output channels or record shapes, but do not alter core results.
-9. Framework adapters keep ComicRelief metadata namespaced instead of merging caller data into logger-owned fields.
-10. Logger exceptions propagate normally; ComicRelief does not swallow or reinterpret sink failures.
+9. Framework adapters keep ComicRelief metadata namespaced.
+10. Logger exceptions propagate normally.
+11. CLI catalog validation rejects malformed untyped input before rendering.
+12. CLI commands do not infer severity, event codes, or canonical text on the caller's behalf.
 
 ## Built-in event codes
-
-The first catalog includes:
 
 - `NETWORK_TIMEOUT`
 - `DNS_FAILURE`
@@ -336,7 +354,7 @@ The first catalog includes:
 - `PRINTER_OFFLINE`
 - `UNKNOWN_ERROR`
 
-You can also supply your own catalog entries without changing the safety model.
+Use `comicrelief events` or `catalogEventCodes()` rather than hard-coding this list in tooling.
 
 ## API
 
@@ -345,6 +363,17 @@ You can also supply your own catalog entries without changing the safety model.
 ```ts
 comicRelief(input, options?)
 humorAllowed(severity)
+```
+
+### Catalog tooling
+
+```ts
+validateCatalog(value)
+isHumorCatalog(value)
+catalogEventCodes(catalog?)
+starterCatalog()
+HUMOR_PROFILES
+ACTIVE_HUMOR_PROFILES
 ```
 
 ### Generic adapters
@@ -365,50 +394,35 @@ loggerLevelForSeverity(severity)
 toLoggerMetadata(record)
 ```
 
-Both logger adapters return the complete structured ComicRelief record after writing it.
-
-### Core result
-
-```ts
-{
-  canonical: string;
-  message: string;
-  humorApplied: boolean;
-  humor?: string;
-  profile: HumorProfile;
-  severity: Severity;
-  code: string;
-}
-```
-
 ## Development
 
 ```bash
 npm install
 npm run check
+npm run cli -- help
 ```
 
 Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md), especially before adding new catalog lines or adapters.
 
 ## Project status
 
-**v0.3 candidate**
+**v0.4 candidate**
 
 - deterministic renderer;
 - hard severity gate;
 - built-in and custom catalogs;
-- stable variant selection;
-- console adapter;
-- structured record adapter;
-- generic structured sink bridge;
-- Pino-compatible adapter;
-- Winston-compatible adapter;
+- runtime catalog validation;
+- catalog discovery and starter tooling;
+- CLI rendering and JSON output;
+- CLI catalog validation;
+- console and structured adapters;
+- Pino- and Winston-compatible adapters;
 - namespaced logger metadata;
-- invariant tests;
+- invariant and CLI integration tests;
 - CI;
 - documented trust boundary.
 
-Likely next steps: CLI ergonomics, catalog tooling, a small browser demo, and optional framework-specific examples. The core rule stays boring on purpose: jokes decorate messages; they do not govern systems.
+Likely next steps: a small browser demo, catalog authoring ergonomics, package/release hardening, and broader compatibility testing. The core rule stays boring on purpose: jokes decorate messages; they do not govern systems.
 
 ## License
 
