@@ -1,11 +1,14 @@
 {
   "name": "comicrelief",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A deterministic, governed humor presentation layer for software messages.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "sideEffects": false,
+  "bin": {
+    "comicrelief": "bin/comicrelief.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,6 +16,7 @@
     }
   },
   "files": [
+    "bin",
     "dist",
     "README.md",
     "LICENSE"
@@ -21,6 +25,7 @@
     "build": "tsc -p tsconfig.json",
     "test": "node --test test/*.test.mjs",
     "check": "npm run build && npm test",
+    "cli": "npm run build && node bin/comicrelief.mjs",
     "example:console": "npm run build && node examples/console.mjs",
     "example:structured": "npm run build && node examples/structured.mjs",
     "example:pino": "npm run build && node examples/pino-like.mjs",
@@ -41,6 +46,7 @@
     "pino",
     "winston",
     "cli",
+    "catalog",
     "developer-experience",
     "typescript"
   ],
