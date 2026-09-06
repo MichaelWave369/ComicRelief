@@ -6,6 +6,12 @@ export {
   createStructuredAdapter,
   toStructuredRecord
 } from "./adapters.js";
+export {
+  createPinoAdapter,
+  createWinstonAdapter,
+  loggerLevelForSeverity,
+  toLoggerMetadata
+} from "./loggers.js";
 
 export type {
   ActiveHumorProfile,
@@ -24,3 +30,11 @@ export type {
   StructuredRecordOptions,
   StructuredSink
 } from "./adapters.js";
+
+export type {
+  LoggerAdapterOptions,
+  LoggerLevel,
+  LoggerMetadata,
+  PinoLike,
+  WinstonLike
+} from "./loggers.js";

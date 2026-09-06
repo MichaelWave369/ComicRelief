@@ -1,6 +1,6 @@
 {
   "name": "comicrelief",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A deterministic, governed humor presentation layer for software messages.",
   "type": "module",
   "main": "dist/index.js",
@@ -22,7 +22,9 @@
     "test": "node --test test/*.test.mjs",
     "check": "npm run build && npm test",
     "example:console": "npm run build && node examples/console.mjs",
-    "example:structured": "npm run build && node examples/structured.mjs"
+    "example:structured": "npm run build && node examples/structured.mjs",
+    "example:pino": "npm run build && node examples/pino-like.mjs",
+    "example:winston": "npm run build && node examples/winston-like.mjs"
   },
   "repository": {
     "type": "git",
@@ -36,6 +38,8 @@
     "humor",
     "errors",
     "logging",
+    "pino",
+    "winston",
     "cli",
     "developer-experience",
     "typescript"
