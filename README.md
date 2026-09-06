@@ -51,12 +51,13 @@ Adapters / Tools
   ├── Structured Logging
   ├── Pino-compatible
   ├── Winston-compatible
-  └── CLI
+  ├── CLI
+  └── Browser Playground
 ```
 
 ComicRelief sits downstream of operational logic. **Presentation has zero authority upstream.**
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the trust boundary and [`docs/CATALOGS.md`](docs/CATALOGS.md) for custom catalog rules.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the trust boundary, [`docs/CATALOGS.md`](docs/CATALOGS.md) for custom catalog rules, and [`docs/DEMO.md`](docs/DEMO.md) for the browser build boundary.
 
 ## Install
 
@@ -80,6 +81,42 @@ const result = comicRelief({
 
 console.log(result.message);
 ```
+
+## Browser playground
+
+v0.5 includes a zero-runtime-dependency browser playground with a live renderer and custom Catalog Lab.
+
+```bash
+npm install
+npm run demo:serve
+```
+
+Open:
+
+```text
+http://127.0.0.1:4173
+```
+
+The playground lets you change:
+
+- event code;
+- severity;
+- canonical message;
+- humor profile;
+- variant seed;
+- validated custom catalog.
+
+The Catalog Lab can generate starter JSON, inspect the built-in catalog, format JSON, and validate custom entries before they are eligible for rendering.
+
+The demo does **not** carry a browser-specific copy of ComicRelief. `npm run demo:build` compiles the package and copies the generated `dist/` graph into `site/lib/`; the browser imports `./lib/index.js` directly.
+
+```text
+src/*.ts → dist/*.js → site/lib/*.js → demo/app.js
+```
+
+That keeps the browser under the same severity gate and catalog validator as every other consumer. `critical` and `emergency` still mean no jokes, even if the editor contains a matching line.
+
+See [`docs/DEMO.md`](docs/DEMO.md) for the full browser architecture.
 
 ## CLI
 
@@ -172,7 +209,7 @@ Runtime discovery is also exported through `HUMOR_PROFILES` and `ACTIVE_HUMOR_PR
 | `critical` | none |
 | `emergency` | none |
 
-`critical` and `emergency` are hard gates. They never receive humor regardless of profile, CLI options, or catalog contents.
+`critical` and `emergency` are hard gates. They never receive humor regardless of profile, CLI options, browser controls, or catalog contents.
 
 ## Catalog tooling API
 
@@ -338,6 +375,8 @@ No network request. No random selection. No hidden model call.
 10. Logger exceptions propagate normally.
 11. CLI catalog validation rejects malformed untyped input before rendering.
 12. CLI commands do not infer severity, event codes, or canonical text on the caller's behalf.
+13. The browser playground imports the compiled package rather than duplicating core behavior.
+14. Invalid browser catalog input is never enabled for rendering.
 
 ## Built-in event codes
 
@@ -400,13 +439,16 @@ toLoggerMetadata(record)
 npm install
 npm run check
 npm run cli -- help
+npm run demo:serve
 ```
 
-Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md), especially before adding new catalog lines or adapters.
+`npm run demo:build` writes the generated static browser bundle to `site/`, which is intentionally ignored by Git.
+
+Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md), especially before adding new catalog lines, adapters, CLI behavior, or browser tooling.
 
 ## Project status
 
-**v0.4 candidate**
+**v0.5 candidate**
 
 - deterministic renderer;
 - hard severity gate;
@@ -417,12 +459,14 @@ Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md), esp
 - CLI catalog validation;
 - console and structured adapters;
 - Pino- and Winston-compatible adapters;
-- namespaced logger metadata;
-- invariant and CLI integration tests;
+- browser playground using the compiled package;
+- live custom Catalog Lab;
+- zero-runtime-dependency static demo build;
+- invariant, CLI, and browser-build integration tests;
 - CI;
 - documented trust boundary.
 
-Likely next steps: a small browser demo, catalog authoring ergonomics, package/release hardening, and broader compatibility testing. The core rule stays boring on purpose: jokes decorate messages; they do not govern systems.
+Likely next steps: hosted demo deployment, package/release hardening, broader Node compatibility, and real framework smoke tests. The core rule stays boring on purpose: jokes decorate messages; they do not govern systems.
 
 ## License
 
