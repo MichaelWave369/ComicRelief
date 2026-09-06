@@ -1,6 +1,6 @@
 # Contributing to ComicRelief
 
-ComicRelief welcomes code, adapters, documentation, tests, and new humor lines. The one thing contributions may not negotiate away is the trust boundary.
+ComicRelief welcomes code, adapters, documentation, tests, CLI improvements, catalog tooling, and new humor lines. The one thing contributions may not negotiate away is the trust boundary.
 
 > **Humor may alter presentation, but never truth, severity, authority, or action semantics.**
 
@@ -9,9 +9,10 @@ ComicRelief welcomes code, adapters, documentation, tests, and new humor lines. 
 ```bash
 npm install
 npm run check
+npm run cli -- help
 ```
 
-`npm run check` must compile the TypeScript package and pass the full Node test suite.
+`npm run check` must compile the TypeScript package and pass the full Node test suite, including executable-level CLI integration tests.
 
 ## Adding humor
 
@@ -29,9 +30,31 @@ A good catalog line should:
 
 If a line needs operational context to be safe or accurate, it probably does not belong in the built-in deterministic catalog.
 
+## Custom catalog tooling
+
+Runtime catalog validation lives in `src/catalog-tools.ts`. The JSON boundary is intentionally stricter than a TypeScript annotation because custom catalogs can arrive from files and other untyped sources.
+
+Changes to validation must preserve these rules:
+
+- the root is an object;
+- each event entry is an object;
+- only active humor profile names are catalog keys;
+- profile values are arrays of strings;
+- empty or whitespace-only strings are rejected;
+- empty arrays remain valid because they explicitly disable humor for that event/profile.
+
+Use the CLI to inspect starter output or validate a file:
+
+```bash
+npm run cli -- catalog sample
+npm run cli -- catalog validate ./comicrelief.catalog.json
+```
+
+See [`docs/CATALOGS.md`](docs/CATALOGS.md) for the public format.
+
 ## Severity policy
 
-`critical` and `emergency` always suppress humor. Contributions must not add bypasses, exceptions, or alternate presentation paths around this rule.
+`critical` and `emergency` always suppress humor. Contributions must not add bypasses, exceptions, CLI flags, catalog rules, or alternate presentation paths around this rule.
 
 ## Adding an adapter
 
@@ -50,7 +73,22 @@ Adapters should not:
 - introduce hidden network calls;
 - make the ComicRelief core depend on a logging framework.
 
-Prefer optional peer integrations or dependency-free structural interfaces where practical.
+Prefer dependency-free structural interfaces where practical.
+
+## CLI changes
+
+The CLI is a presentation and developer-tooling surface. It may collect caller input, validate catalog files, render output, and expose discovery commands.
+
+It must not:
+
+- infer severity from message text;
+- invent an event code;
+- rewrite the caller's canonical message;
+- bypass core severity gates;
+- silently accept malformed custom catalogs;
+- turn rendering or validation failures into successful exit codes.
+
+CLI behavior changes should be tested by invoking `bin/comicrelief.mjs` as a child process, not only by unit-testing internal helpers.
 
 ## Tests
 
@@ -60,14 +98,17 @@ Every behavior change should include an invariant-focused test. In particular, n
 2. severity is preserved exactly;
 3. `critical` and `emergency` remain humor-free;
 4. unknown event codes fail closed unless explicitly configured;
-5. adapters emit what the core actually returned.
+5. adapters emit what the core actually returned;
+6. malformed untyped catalog data is rejected before rendering;
+7. CLI failures return nonzero exit status.
 
 ## Pull requests
 
 Keep pull requests narrow and explain whether the change affects:
 
 - core rendering;
-- catalog content;
+- catalog content or validation;
+- CLI behavior;
 - adapters;
 - public types;
 - documentation only.
