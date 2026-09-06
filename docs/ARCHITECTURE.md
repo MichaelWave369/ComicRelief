@@ -34,7 +34,8 @@ Canonical Message            Presentation Message
                  Adapters
            - console output
            - structured records
-           - future logger bridges
+           - Pino-compatible
+           - Winston-compatible
 ```
 
 ## Trust boundary
@@ -80,9 +81,79 @@ Adapters may choose an output channel or record shape. They do not change the Co
 
 For example, the console adapter maps `warning` to `console.warn` and `critical` to `console.error`, but the `severity` field itself remains unchanged.
 
+### 6. Logger metadata confinement
+
+Framework adapters place ComicRelief data under a dedicated metadata namespace, `comicRelief` by default.
+
+Caller-owned context remains nested beneath that metadata instead of being spread across framework-owned top-level fields. This prevents caller data such as `level`, `message`, `msg`, or similar names from silently replacing logger semantics.
+
+The framework-facing message may contain humor, but the exact canonical text remains separately addressable as `comicRelief.canonical`.
+
+### 7. Logger failure transparency
+
+ComicRelief does not catch, suppress, reinterpret, or retry exceptions thrown by a logger sink.
+
+If Pino, Winston, a transport, or a caller-provided compatible logger fails, that failure propagates according to the logger's normal behavior. Presentation code does not become an accidental recovery policy.
+
+## Logger severity bridge
+
+The Pino- and Winston-compatible adapters use a conservative three-channel mapping:
+
+| ComicRelief severity | Framework level |
+| --- | --- |
+| `info` | `info` |
+| `success` | `info` |
+| `warning` | `warn` |
+| `error` | `error` |
+| `critical` | `error` |
+| `emergency` | `error` |
+
+This mapping selects a framework output level only. The authoritative ComicRelief severity remains preserved in the structured metadata.
+
+## Pino-compatible boundary
+
+ComicRelief uses only this conceptual Pino surface:
+
+```ts
+logger.info(bindings, message)
+logger.warn(bindings, message)
+logger.error(bindings, message)
+```
+
+The adapter does not import Pino, configure transports, create child loggers, change serializers, or control Pino lifecycle.
+
+Example output shape:
+
+```json
+{
+  "msg": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
+  "comicRelief": {
+    "code": "DNS_FAILURE",
+    "severity": "warning",
+    "canonical": "DNS lookup failed.",
+    "presentation": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
+    "humorApplied": true
+  }
+}
+```
+
+## Winston-compatible boundary
+
+ComicRelief uses only Winston's normal info-object concept:
+
+```ts
+logger.log({
+  level: "warn",
+  message: "...",
+  comicRelief: { ... }
+});
+```
+
+The adapter does not import Winston, construct transports, mutate formats, or own logger configuration.
+
 ## Structured logging guidance
 
-For machine-ingested logs, prefer `toStructuredRecord` or `createStructuredAdapter`.
+For framework-neutral machine-ingested logs, prefer `toStructuredRecord` or `createStructuredAdapter`.
 
 ```json
 {
@@ -103,6 +174,8 @@ ComicRelief is not:
 
 - an error classifier;
 - a logging framework;
+- a logger configuration system;
+- a transport manager;
 - an incident-management system;
 - a safety monitor;
 - an LLM prompt wrapper;
@@ -111,8 +184,8 @@ ComicRelief is not:
 
 If the core system does not know what happened, ComicRelief should not pretend it does.
 
-## Future adapters
+## Adapter rule
 
-Framework integrations should remain thin translations around the stable core. A Pino or Winston adapter, for example, should map a `StructuredComicRecord` into that logger's native call shape rather than teaching the ComicRelief core about framework-specific concepts.
+Framework integrations remain thin translations around the stable core. Pino and Winston adapters map a `StructuredComicRecord` into each logger's native call shape; they do not teach the ComicRelief core about framework-specific lifecycle, transport, serialization, or configuration concepts.
 
 That separation keeps the joke layer replaceable and the operational layer boring, which is exactly how we want it.
