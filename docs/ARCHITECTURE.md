@@ -30,12 +30,14 @@ Canonical Message            Presentation Message
         |                          |
         +-------------+------------+
                       |
-                      v
-                 Adapters
-           - console output
-           - structured records
-           - Pino-compatible
-           - Winston-compatible
+          +-----------+-----------+
+          |                       |
+          v                       v
+       Adapters                 CLI / Tools
+  - console output          - render messages
+  - structured records     - discover events/profiles
+  - Pino-compatible        - validate catalogs
+  - Winston-compatible     - emit starter catalogs
 ```
 
 ## Trust boundary
@@ -95,6 +97,39 @@ ComicRelief does not catch, suppress, reinterpret, or retry exceptions thrown by
 
 If Pino, Winston, a transport, or a caller-provided compatible logger fails, that failure propagates according to the logger's normal behavior. Presentation code does not become an accidental recovery policy.
 
+### 8. Untyped catalog validation
+
+Custom catalogs may arrive from JSON files or other untyped sources. Runtime validation occurs before CLI rendering when a catalog file is supplied.
+
+Validation rejects malformed roots, malformed event entries, unknown profile names, non-array profile values, non-string lines, and empty or whitespace-only lines.
+
+Empty arrays remain valid because they have an explicit meaning: disable humor for that exact event/profile pair.
+
+Catalog validation does not grant a custom catalog authority over severity, canonical text, or control flow. A valid catalog is still only presentation data.
+
+### 9. CLI confinement
+
+The CLI collects caller-provided values and invokes the same public core used by library consumers.
+
+It may:
+
+- render a caller-supplied event;
+- emit JSON output;
+- list built-in event codes and profiles;
+- validate custom catalog JSON;
+- emit a starter catalog.
+
+It does not:
+
+- infer severity from text;
+- invent an event code;
+- rewrite canonical text;
+- bypass high-severity suppression;
+- convert malformed catalog input into a successful render;
+- swallow CLI validation failures behind a zero exit code.
+
+The CLI is a developer convenience surface, not an alternate policy engine.
+
 ## Logger severity bridge
 
 The Pino- and Winston-compatible adapters use a conservative three-channel mapping:
@@ -121,21 +156,6 @@ logger.error(bindings, message)
 ```
 
 The adapter does not import Pino, configure transports, create child loggers, change serializers, or control Pino lifecycle.
-
-Example output shape:
-
-```json
-{
-  "msg": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
-  "comicRelief": {
-    "code": "DNS_FAILURE",
-    "severity": "warning",
-    "canonical": "DNS lookup failed.",
-    "presentation": "DNS lookup failed.\nIt is DNS. It was always going to be DNS.",
-    "humorApplied": true
-  }
-}
-```
 
 ## Winston-compatible boundary
 
@@ -180,12 +200,15 @@ ComicRelief is not:
 - a safety monitor;
 - an LLM prompt wrapper;
 - a replacement for canonical error messages;
-- a mechanism for hiding unpleasant system state.
+- a mechanism for hiding unpleasant system state;
+- a policy engine for deciding whether an event is serious.
 
 If the core system does not know what happened, ComicRelief should not pretend it does.
 
-## Adapter rule
+## Extension rule
 
-Framework integrations remain thin translations around the stable core. Pino and Winston adapters map a `StructuredComicRecord` into each logger's native call shape; they do not teach the ComicRelief core about framework-specific lifecycle, transport, serialization, or configuration concepts.
+Adapters and tools remain thin translations around the stable core. Pino and Winston adapters map a `StructuredComicRecord` into each logger's native call shape. The CLI maps explicit command-line values into the same public renderer and catalog validator.
+
+Neither layer teaches the ComicRelief core about framework lifecycle, transport, serialization, application policy, or incident response.
 
 That separation keeps the joke layer replaceable and the operational layer boring, which is exactly how we want it.
