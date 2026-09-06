@@ -1,0 +1,40 @@
+{
+  "name": "comicrelief",
+  "version": "0.1.0",
+  "description": "A deterministic, governed humor presentation layer for software messages.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/test/*.test.js",
+    "check": "npm run build && npm test"
+  },
+  "keywords": [
+    "humor",
+    "errors",
+    "logging",
+    "cli",
+    "developer-experience",
+    "typescript"
+  ],
+  "author": "MichaelWave369",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
