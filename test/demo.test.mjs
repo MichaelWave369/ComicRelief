@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { access, readFile, rm } from "node:fs/promises";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { after, before, test } from "node:test";
 
-const root = resolve(import.meta.dirname ?? new URL("..", import.meta.url).pathname, "..");
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const site = resolve(root, "site");
 
 before(() => {
