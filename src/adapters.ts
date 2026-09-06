@@ -1,4 +1,4 @@
-import { comicRelief } from "./index.js";
+import { comicRelief } from "./core.js";
 import type {
   ComicEventInput,
   ComicReliefOptions,
